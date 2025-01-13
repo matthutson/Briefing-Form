@@ -165,10 +165,15 @@
             <label for="requestType">What do you need?*</label>
             <select id="requestType" name="requestType" required>
                 <option value="">Select an option...</option>
-                <option value="New Web Page">New Web Page</option>
-                <option value="Update Existing Page">Update Existing Webpage</option>
-                <option value="News Article">Blog or News Article</option>
+                <option value="newPage">New Web Page</option>
+                <option value="updatePage">Update Existing Webpage</option>
+                <option value="blogNews">Blog or News Article</option>
             </select>
+        </div>
+
+        <div class="form-group">
+            <label for="pageTitle">Page Title(s)*</label>
+            <input type="text" id="pageTitle" name="pageTitle" required>
         </div>
         
         <div class="form-group">
@@ -237,11 +242,15 @@
         <div class="form-group">
             <label>Please list each page name and URL of the pages you're briefing here:*</label>
             <div class="editor-toolbar">
+                <button type="button" onclick="formatDoc('formatBlock', 'pages', 'H1')">H1</button>
+                <button type="button" onclick="formatDoc('formatBlock', 'pages', 'H2')">H2</button>
+                <button type="button" onclick="formatDoc('formatBlock', 'pages', 'H3')">H3</button>
                 <button type="button" onclick="formatDoc('bold', 'pages')">B</button>
                 <button type="button" onclick="formatDoc('italic', 'pages')">I</button>
                 <button type="button" onclick="formatDoc('insertunorderedlist', 'pages')">• List</button>
                 <button type="button" onclick="formatDoc('insertorderedlist', 'pages')">1. List</button>
                 <button type="button" onclick="formatDoc('createlink', 'pages')">Link</button>
+                <button type="button" onclick="insertTable('pages')">Table</button>
             </div>
             <div id="pages" class="editor-content" contenteditable="true">https://www.comicrelief.com/add-path-here</div>
         </div>
@@ -249,6 +258,23 @@
         <div class="form-group">
             <label for="boxLink">Box link to folder containing text and images:</label>
             <input type="url" id="boxLink" name="boxLink" placeholder="https://comicrelief.app.box.com/...">
+        </div>
+
+        <div class="form-group">
+            <label>Summary Copy</label>
+            <p class="field-description" style="margin-bottom: 0.5rem; color: #6B778C; font-size: 0.9rem;">50 words of copy that can be used on landing pages that link to this page</p>
+            <div class="editor-toolbar">
+                <button type="button" onclick="formatDoc('formatBlock', 'summary', 'H1')">H1</button>
+                <button type="button" onclick="formatDoc('formatBlock', 'summary', 'H2')">H2</button>
+                <button type="button" onclick="formatDoc('formatBlock', 'summary', 'H3')">H3</button>
+                <button type="button" onclick="formatDoc('bold', 'summary')">B</button>
+                <button type="button" onclick="formatDoc('italic', 'summary')">I</button>
+                <button type="button" onclick="formatDoc('insertunorderedlist', 'summary')">• List</button>
+                <button type="button" onclick="formatDoc('insertorderedlist', 'summary')">1. List</button>
+                <button type="button" onclick="formatDoc('createlink', 'summary')">Link</button>
+                <button type="button" onclick="insertTable('summary')">Table</button>
+            </div>
+            <div id="summary" class="editor-content" contenteditable="true"></div>
         </div>
         
         <button type="submit" class="submit-btn">Submit Brief</button>
@@ -416,10 +442,12 @@
                     name: document.getElementById('name').value,
                     email: document.getElementById('email').value,
                     requestType: document.getElementById('requestType').value,
+                    pageTitle: document.getElementById('pageTitle').value,
                     projects: selectedProjects,
                     dueDate: document.getElementById('dueDate').value,
                     description: document.getElementById('description').innerHTML,
                     pages: document.getElementById('pages').innerHTML,
+                    summaryCopy: document.getElementById('summary').innerHTML,
                     boxLink: document.getElementById('boxLink').value
                 };
 
