@@ -29,9 +29,31 @@
             font-size: 1rem;
             margin-bottom: 0.5rem;
         }
+        .editor-toolbar {
+            padding: 0.5rem;
+            border: 2px solid #DFE1E6;
+            border-bottom: none;
+            border-radius: 3px 3px 0 0;
+            background: #f4f5f7;
+            display: flex;
+            flex-wrap: wrap;
+            gap: 0.5rem;
+        }
+        .editor-toolbar button {
+            padding: 0.25rem 0.5rem;
+            background: white;
+            border: 1px solid #DFE1E6;
+            border-radius: 3px;
+            cursor: pointer;
+            font-size: 0.875rem;
+        }
+        .editor-toolbar button:hover {
+            background: #f4f5f7;
+        }
         .editor-content {
             border: 2px solid #DFE1E6;
-            border-radius: 3px;
+            border-top: none;
+            border-radius: 0 0 3px 3px;
             padding: 0.5rem;
             min-height: 150px;
         }
@@ -62,9 +84,11 @@
             border: 1px solid #DFE1E6;
             padding: 8px;
             text-align: left;
+            word-break: break-all;
         }
         th {
             background: #f4f5f7;
+            white-space: nowrap;
         }
         .debug-panel {
             margin-top: 2rem;
@@ -73,12 +97,50 @@
             border-radius: 3px;
             display: none;
         }
+        .modal {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.5);
+            z-index: 1000;
+        }
+        .modal-content {
+            position: fixed;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            background: white;
+            padding: 20px;
+            border-radius: 5px;
+            min-width: 300px;
+        }
+        .modal input {
+            width: 100%;
+            margin-bottom: 10px;
+            padding: 0.5rem;
+            border: 1px solid #DFE1E6;
+            border-radius: 3px;
+        }
+        .modal-buttons {
+            display: flex;
+            justify-content: flex-end;
+            gap: 0.5rem;
+            margin-top: 1rem;
+        }
+        .hidden-field {
+            display: none;
+        }
     </style>
 </head>
 <body>
     <h1>Friendly URLs Form</h1>
     
     <form id="furlForm">
+        <input type="hidden" id="title" name="title" value="FRIENDLY URL">
+        
         <div class="form-group">
             <label for="name">Your Name*</label>
             <input type="text" id="name" name="name" required>
@@ -91,7 +153,18 @@
         
         <div class="form-group">
             <label>Friendly URLs*</label>
-            <div id="furlTable" class="editor-content">
+            <div class="editor-toolbar">
+                <button type="button" onclick="formatDoc('formatBlock', 'P')">Normal text</button>
+                <button type="button" onclick="formatDoc('formatBlock', 'H1')">H1</button>
+                <button type="button" onclick="formatDoc('formatBlock', 'H2')">H2</button>
+                <button type="button" onclick="formatDoc('formatBlock', 'H3')">H3</button>
+                <button type="button" onclick="formatDoc('bold')">B</button>
+                <button type="button" onclick="formatDoc('italic')">I</button>
+                <button type="button" onclick="formatDoc('insertunorderedlist')">• List</button>
+                <button type="button" onclick="formatDoc('insertorderedlist')">1. List</button>
+                <button type="button" onclick="formatDoc('createlink')">Link</button>
+            </div>
+            <div id="furlTable" class="editor-content" contenteditable="true">
                 <table>
                     <thead>
                         <tr>
@@ -122,6 +195,18 @@
         <button type="submit" class="submit-btn">Submit</button>
     </form>
 
+    <div id="linkModal" class="modal">
+        <div class="modal-content">
+            <h3>Insert Link</h3>
+            <input type="text" id="linkText" placeholder="Text to display">
+            <input type="url" id="linkUrl" placeholder="URL">
+            <div class="modal-buttons">
+                <button onclick="insertLink()" class="submit-btn">Insert</button>
+                <button onclick="hideModal()">Cancel</button>
+            </div>
+        </div>
+    </div>
+
     <div id="debugPanel" class="debug-panel">
         <h3>Debug Information</h3>
         <pre id="debugOutput"></pre>
@@ -136,6 +221,97 @@
                     placeholderRow.classList.add('hide-placeholder');
                 }
             }, true);
+
+            // Rich text formatting functions
+            window.formatDoc = function(cmd, value = null) {
+                if (cmd === 'formatBlock') {
+                    document.execCommand(cmd, false, `<${value}>`);
+                } else if (cmd === 'createlink') {
+                    const modal = document.getElementById('linkModal');
+                    modal.style.display = 'block';
+                    const selection = window.getSelection();
+                    if (selection.toString()) {
+                        document.getElementById('linkText').value = selection.toString();
+                    }
+                } else {
+                    document.execCommand(cmd, false, null);
+                }
+                document.getElementById('furlTable').focus();
+            };
+
+            window.insertLink = function() {
+                const text = document.getElementById('linkText').value;
+                const url = document.getElementById('linkUrl').value;
+                
+                if (url) {
+                    if (text) {
+                        const link = `<a href="${url}" target="_blank">${text}</a>`;
+                        document.execCommand('insertHTML', false, link);
+                    } else {
+                        document.execCommand('createlink', false, url);
+                    }
+                }
+                hideModal();
+            };
+
+            window.hideModal = function() {
+                const modal = document.getElementById('linkModal');
+                modal.style.display = 'none';
+                document.getElementById('linkText').value = '';
+                document.getElementById('linkUrl').value = '';
+            };
+
+            // Helper function to convert HTML to Jira markup
+            function htmlToJiraMarkup(html) {
+                const temp = document.createElement('div');
+                temp.innerHTML = html;
+
+                function processNode(node) {
+                    if (node.nodeType === Node.TEXT_NODE) {
+                        return node.textContent;
+                    }
+                    
+                    if (node.nodeType === Node.ELEMENT_NODE) {
+                        const tag = node.tagName.toLowerCase();
+                        const innerContent = Array.from(node.childNodes)
+                            .map(child => processNode(child))
+                            .join('');
+                            
+                        switch(tag) {
+                            case 'h1': return `h1. ${innerContent}\n\n`;
+                            case 'h2': return `h2. ${innerContent}\n\n`;
+                            case 'h3': return `h3. ${innerContent}\n\n`;
+                            case 'b':
+                            case 'strong': return `*${innerContent}*`;
+                            case 'i':
+                            case 'em': return `_${innerContent}_`;
+                            case 'a': return `[${innerContent}|${node.getAttribute('href')}]`;
+                            case 'ul': return innerContent + '\n';
+                            case 'ol': return innerContent + '\n';
+                            case 'li': return `* ${innerContent}\n`;
+                            case 'p': return innerContent + '\n\n';
+                            case 'table': return innerContent + '\n';
+                            case 'tr':
+                                if (node.parentElement.tagName === 'THEAD') {
+                                    return '||' + Array.from(node.children)
+                                        .map(th => th.textContent.trim())
+                                        .join('||') + '||\n';
+                                }
+                                return '|' + Array.from(node.children)
+                                    .map(td => td.textContent.trim())
+                                    .join('|') + '|\n';
+                            case 'td':
+                            case 'th':
+                                return innerContent;
+                            default:
+                                return innerContent;
+                        }
+                    }
+                    return '';
+                }
+
+                return processNode(temp);
+            }
 
             // Form submission
             document.getElementById('furlForm').addEventListener('submit', async (e) => {
@@ -154,18 +330,14 @@
                     console.log(message, data);
                 }
 
-                // Get table data
-                const tableRows = Array.from(document.querySelectorAll('#furlTable tbody tr:not(.placeholder-row)'))
-                    .map(row => ({
-                        friendlyUrl: row.cells[0].textContent.trim(),
-                        destinationUrl: row.cells[1].textContent.trim()
-                    }))
-                    .filter(row => row.friendlyUrl || row.destinationUrl);
+                const formContent = document.getElementById('furlTable').innerHTML;
+                const jiraMarkup = htmlToJiraMarkup(formContent);
 
                 const formData = {
+                    title: document.getElementById('title').value,
                     name: document.getElementById('name').value,
                     email: document.getElementById('email').value,
-                    urls: tableRows
+                    description: jiraMarkup
                 };
 
                 log('Form data to be sent:', formData);
