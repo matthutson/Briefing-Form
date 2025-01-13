@@ -467,13 +467,23 @@
                                 const prefix = parent.tagName.toLowerCase() === 'ul' ? '* ' : '# ';
                                 return prefix + innerContent + '\n';
                             case 'table':
-                                return innerContent + '\n';
+                                // Start table processing
+                                return '\n' + innerContent + '\n';
                             case 'tr':
-                                return '|' + innerContent + '\n';
+                                // Check if this is a header row (contains th elements)
+                                const isHeaderRow = Array.from(node.children).some(cell => cell.tagName.toLowerCase() === 'th');
+                                if (isHeaderRow) {
+                                    return '||' + Array.from(node.children)
+                                        .map(th => th.textContent.trim())
+                                        .join('||') + '||\n';
+                                }
+                                return '|' + Array.from(node.children)
+                                    .map(td => td.textContent.trim())
+                                    .join('|') + '|\n';
                             case 'th':
-                                return '||' + innerContent;
                             case 'td':
-                                return '|' + innerContent;
+                                // Handle individual cells in processNode('tr')
+                                return innerContent;
                             case 'br':
                                 return '\n';
                             case 'p':
