@@ -226,6 +226,7 @@
         <div class="form-group">
             <label>A brief description of what you need and why*</label>
             <div class="editor-toolbar">
+                <button type="button" onclick="formatDoc('formatBlock', 'description', 'P')">Normal text</button>
                 <button type="button" onclick="formatDoc('formatBlock', 'description', 'H1')">H1</button>
                 <button type="button" onclick="formatDoc('formatBlock', 'description', 'H2')">H2</button>
                 <button type="button" onclick="formatDoc('formatBlock', 'description', 'H3')">H3</button>
@@ -242,6 +243,7 @@
         <div class="form-group">
             <label>Please list each page name and URL of the pages you're briefing here:*</label>
             <div class="editor-toolbar">
+                <button type="button" onclick="formatDoc('formatBlock', 'pages', 'P')">Normal text</button>
                 <button type="button" onclick="formatDoc('formatBlock', 'pages', 'H1')">H1</button>
                 <button type="button" onclick="formatDoc('formatBlock', 'pages', 'H2')">H2</button>
                 <button type="button" onclick="formatDoc('formatBlock', 'pages', 'H3')">H3</button>
@@ -264,6 +266,7 @@
             <label>Summary Copy</label>
             <p class="field-description" style="margin-bottom: 0.5rem; color: #6B778C; font-size: 0.9rem;">50 words of copy that can be used on landing pages that link to this page</p>
             <div class="editor-toolbar">
+                <button type="button" onclick="formatDoc('formatBlock', 'summary', 'P')">Normal text</button>
                 <button type="button" onclick="formatDoc('formatBlock', 'summary', 'H1')">H1</button>
                 <button type="button" onclick="formatDoc('formatBlock', 'summary', 'H2')">H2</button>
                 <button type="button" onclick="formatDoc('formatBlock', 'summary', 'H3')">H3</button>
@@ -418,6 +421,74 @@
                 hideModal();
             };
 
+            function htmlToJiraMarkup(html) {
+                // Create a temporary div to parse HTML
+                const temp = document.createElement('div');
+                temp.innerHTML = html;
+
+                function processNode(node) {
+                    let result = '';
+                    
+                    // Handle different node types
+                    if (node.nodeType === Node.TEXT_NODE) {
+                        return node.textContent;
+                    }
+                    
+                    if (node.nodeType === Node.ELEMENT_NODE) {
+                        const tag = node.tagName.toLowerCase();
+                        
+                        // Process children first
+                        let innerContent = Array.from(node.childNodes)
+                            .map(child => processNode(child))
+                            .join('');
+                            
+                        // Handle different HTML elements
+                        switch(tag) {
+                            case 'h1':
+                                return `h1. ${innerContent}\n\n`;
+                            case 'h2':
+                                return `h2. ${innerContent}\n\n`;
+                            case 'h3':
+                                return `h3. ${innerContent}\n\n`;
+                            case 'b':
+                            case 'strong':
+                                return `*${innerContent}*`;
+                            case 'i':
+                            case 'em':
+                                return `_${innerContent}_`;
+                            case 'a':
+                                return `[${innerContent}|${node.getAttribute('href')}]`;
+                            case 'ul':
+                                return innerContent + '\n';
+                            case 'ol':
+                                return innerContent + '\n';
+                            case 'li':
+                                const parent = node.parentElement;
+                                const prefix = parent.tagName.toLowerCase() === 'ul' ? '* ' : '# ';
+                                return prefix + innerContent + '\n';
+                            case 'table':
+                                return innerContent + '\n';
+                            case 'tr':
+                                return '|' + innerContent + '\n';
+                            case 'th':
+                                return '||' + innerContent;
+                            case 'td':
+                                return '|' + innerContent;
+                            case 'br':
+                                return '\n';
+                            case 'p':
+                                return innerContent + '\n\n';
+                            default:
+                                return innerContent;
+                        }
+                    }
+                    
+                    return '';
+                }
+
+                return processNode(temp);
+            }
+
             document.getElementById('briefingForm').addEventListener('submit', async (e) => {
                 e.preventDefault();
                 const debugPanel = document.getElementById('debugPanel');
@@ -445,9 +516,9 @@
                     pageTitle: document.getElementById('pageTitle').value,
                     projects: selectedProjects,
                     dueDate: document.getElementById('dueDate').value,
-                    description: document.getElementById('description').innerHTML,
-                    pages: document.getElementById('pages').innerHTML,
-                    summaryCopy: document.getElementById('summary').innerHTML,
+                    description: htmlToJiraMarkup(document.getElementById('description').innerHTML),
+                    pages: htmlToJiraMarkup(document.getElementById('pages').innerHTML),
+                    summaryCopy: htmlToJiraMarkup(document.getElementById('summary').innerHTML),
                     boxLink: document.getElementById('boxLink').value
                 };
 
