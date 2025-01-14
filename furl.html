@@ -97,6 +97,10 @@
         .submit-btn:hover {
             background: #CD1736;
         }
+        .submit-btn:disabled {
+            background: #cccccc;
+            cursor: not-allowed;
+        }
         table {
             width: 100%;
             border-collapse: collapse;
@@ -166,6 +170,38 @@
         }
         .hidden-field {
             display: none;
+        }
+        .loading {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(255, 255, 255, 0.8);
+            display: none;
+            justify-content: center;
+            align-items: center;
+            z-index: 1001;
+        }
+        .loading-content {
+            text-align: center;
+            background: white;
+            padding: 2rem;
+            border-radius: 8px;
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+        }
+        .spinner {
+            border: 4px solid #f3f3f3;
+            border-top: 4px solid #E31C3D;
+            border-radius: 50%;
+            width: 40px;
+            height: 40px;
+            animation: spin 1s linear infinite;
+            margin: 0 auto 1rem;
+        }
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
         }
     </style>
 </head>
@@ -253,6 +289,13 @@
         </div>
     </div>
 
+    <div class="loading" id="loadingOverlay">
+        <div class="loading-content">
+            <div class="spinner"></div>
+            <p>Submitting form...</p>
+        </div>
+    </div>
+
     <div id="debugPanel" class="debug-panel">
         <h3>Debug Information</h3>
         <pre id="debugOutput"></pre>
@@ -260,6 +303,20 @@
 
     <script>
         document.addEventListener('DOMContentLoaded', () => {
+            const form = document.getElementById('furlForm');
+            const submitButton = form.querySelector('button[type="submit"]');
+            const loadingOverlay = document.getElementById('loadingOverlay');
+
+            function showLoading() {
+                submitButton.disabled = true;
+                loadingOverlay.style.display = 'flex';
+            }
+
+            function hideLoading() {
+                submitButton.disabled = false;
+                loadingOverlay.style.display = 'none';
+            }
+
             // Rich text formatting functions
             window.formatDoc = function(cmd, value = null) {
                 if (cmd === 'formatBlock') {
@@ -337,54 +394,3 @@
                                 }
                                 return '|' + Array.from(node.children)
                                     .map(td => td.textContent.trim() || ' ')
-                                    .join('|') + '|\n';
-                            case 'td':
-                            case 'th':
-                                return innerContent;
-                            default:
-                                return innerContent;
-                        }
-                    }
-                    return '';
-                }
-
-                return processNode(temp);
-            }
-
-            // Form submission
-            document.getElementById('furlForm').addEventListener('submit', async (e) => {
-                e.preventDefault();
-                const debugPanel = document.getElementById('debugPanel');
-                const debugOutput = document.getElementById('debugOutput');
-                debugPanel.style.display = 'block';
-                
-                function log(message, data = null) {
-                    const timestamp = new Date().toISOString();
-                    let logMessage = `${timestamp}: ${message}\n`;
-                    if (data) {
-                        logMessage += JSON.stringify(data, null, 2) + '\n';
-                    }
-                    debugOutput.textContent += logMessage;
-                    console.log(message, data);
-                }
-
-                const formContent = document.getElementById('furlTable').innerHTML;
-                const jiraMarkup = htmlToJiraMarkup(formContent);
-
-                const formData = {
-                    title: document.getElementById('title').value,
-                    name: document.getElementById('name').value,
-                    email: document.getElementById('email').value,
-                    description: jiraMarkup
-                };
-
-                log('Form data to be sent:', formData);
-
-                try {
-                    log('Sending request to webhook...');
-                    const response = await fetch('https://n8n-container-service.5ndtj2s2t8qdr.eu-west-2.cs.amazonlightsail.com/webhook/9c5d58f8-73a1-45c7-9360-6cedf7e94676', {
-                        method: 'POST',
-                        headers: {
-                            'Content-Type': 'application/json'
-                        },
-                        body: JSON.stringify(formData
