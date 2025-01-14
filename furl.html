@@ -29,6 +29,34 @@
             font-size: 1rem;
             margin-bottom: 0.5rem;
         }
+        .example-section {
+            margin-bottom: 1rem;
+            padding: 1rem;
+            background: #f4f5f7;
+            border-radius: 3px;
+        }
+        .example-section p {
+            margin: 0.5rem 0;
+        }
+        .example-section p:first-child {
+            font-weight: 500;
+        }
+        .example-table {
+            width: 100%;
+            border-collapse: collapse;
+            margin: 0.5rem 0;
+            background: white;
+        }
+        .example-table th,
+        .example-table td {
+            border: 1px solid #DFE1E6;
+            padding: 8px;
+            text-align: left;
+            word-break: break-all;
+        }
+        .example-table th {
+            font-weight: 600;
+        }
         .editor-toolbar {
             padding: 0.5rem;
             border: 2px solid #DFE1E6;
@@ -69,12 +97,6 @@
         .submit-btn:hover {
             background: #CD1736;
         }
-        .placeholder-row {
-            color: #6B778C;
-        }
-        .hide-placeholder {
-            display: none;
-        }
         table {
             width: 100%;
             border-collapse: collapse;
@@ -89,6 +111,18 @@
         th {
             background: #f4f5f7;
             white-space: nowrap;
+            font-weight: 500;
+        }
+        td[contenteditable="true"] {
+            line-height: 1.5;
+            min-height: 24px;
+            height: 24px;
+            padding: 8px;
+        }
+        td[contenteditable="true"]:empty:before {
+            content: '';
+            display: inline-block;
+            min-height: 1.5em;
         }
         .debug-panel {
             margin-top: 2rem;
@@ -153,6 +187,22 @@
         
         <div class="form-group">
             <label>Friendly URLs*</label>
+            
+            <div class="example-section">
+                <p>Add all of the FURLS you need in the table below. If you just need one only fill out the top row.</p>
+                <p>Add your data in the following format:</p>
+                <table class="example-table">
+                    <tr>
+                        <th>Friendly URL</th>
+                        <th>Destination URL with UTM tracking string</th>
+                    </tr>
+                    <tr>
+                        <td>/hope</td>
+                        <td>https://donation.comicrelief.com/?cartId=cr24-winter-sms-c&utm_source=triggered&utm_medium=sms&utm_campaign=winter24__donate_donate___uk___text__cr0002331</td>
+                    </tr>
+                </table>
+            </div>
+
             <div class="editor-toolbar">
                 <button type="button" onclick="formatDoc('formatBlock', 'P')">Normal text</button>
                 <button type="button" onclick="formatDoc('formatBlock', 'H1')">H1</button>
@@ -173,10 +223,6 @@
                         </tr>
                     </thead>
                     <tbody>
-                        <tr class="placeholder-row">
-                            <td>/hope</td>
-                            <td>https://donation.comicrelief.com/?cartId=cr24-winter-sms-c&utm_source=triggered&utm_medium=sms&utm_campaign=winter24__donate_donate___uk___text__cr0002331</td>
-                        </tr>
                         <tr><td contenteditable="true"></td><td contenteditable="true"></td></tr>
                         <tr><td contenteditable="true"></td><td contenteditable="true"></td></tr>
                         <tr><td contenteditable="true"></td><td contenteditable="true"></td></tr>
@@ -214,14 +260,6 @@
 
     <script>
         document.addEventListener('DOMContentLoaded', () => {
-            // Handle placeholder behavior
-            document.querySelector('#furlTable').addEventListener('focus', (e) => {
-                const placeholderRow = document.querySelector('.placeholder-row');
-                if (placeholderRow) {
-                    placeholderRow.classList.add('hide-placeholder');
-                }
-            }, true);
-
             // Rich text formatting functions
             window.formatDoc = function(cmd, value = null) {
                 if (cmd === 'formatBlock') {
@@ -298,7 +336,7 @@
                                         .join('||') + '||\n';
                                 }
                                 return '|' + Array.from(node.children)
-                                    .map(td => td.textContent.trim())
+                                    .map(td => td.textContent.trim() || ' ')
                                     .join('|') + '|\n';
                             case 'td':
                             case 'th':
@@ -349,30 +387,4 @@
                         headers: {
                             'Content-Type': 'application/json'
                         },
-                        body: JSON.stringify(formData)
-                    });
-
-                    log(`Response status: ${response.status}`);
-                    const responseText = await response.text();
-                    log('Response body:', responseText);
-
-                    if (!response.ok) {
-                        throw new Error(`Failed to create issue: ${response.status} ${responseText}`);
-                    }
-
-                    alert('Friendly URLs submitted successfully!');
-                    document.getElementById('furlForm').reset();
-                    document.querySelectorAll('#furlTable td[contenteditable="true"]')
-                        .forEach(cell => cell.textContent = '');
-                    document.querySelector('.placeholder-row').classList.remove('hide-placeholder');
-                    debugOutput.textContent = '';
-
-                } catch (error) {
-                    log('Error occurred:', error.message);
-                    alert('Error submitting form: ' + error.message);
-                }
-            });
-        });
-    </script>
-</body>
-</html>
+                        body: JSON.stringify(formData
