@@ -1,7 +1,7 @@
 <!DOCTYPE html>
 <html>
 <head>
-    <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@400;700;900&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@400;700;900&family=Anton&display=swap" rel="stylesheet">
     <style>
         .countdown-container {
             font-family: 'Montserrat', sans-serif;
@@ -17,7 +17,7 @@
             display: flex;
             justify-content: center;
             gap: 15px;
-            margin-bottom: 20px;
+            margin-top: 20px;
         }
         .countdown-box {
             background: rgba(255, 255, 255, 0.95);
@@ -46,9 +46,9 @@
             font-weight: 700;
         }
         .countdown-text {
-            font-size: 28px;
+            font-family: 'Anton', sans-serif;
+            font-size: 32px;
             color: white;
-            font-weight: 900;
             margin: 0;
             text-transform: uppercase;
             letter-spacing: 2px;
@@ -66,6 +66,7 @@
 </head>
 <body>
     <div class="countdown-container">
+        <p class="countdown-text">RED NOSE DAY COUNTDOWN</p>
         <div class="countdown-timer">
             <div class="countdown-box">
                 <div id="days" class="countdown-value">00</div>
@@ -84,7 +85,6 @@
                 <div class="countdown-label">Seconds</div>
             </div>
         </div>
-        <p class="countdown-text">Until Red Nose Day</p>
     </div>
 
     <script>
