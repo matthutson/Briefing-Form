@@ -55,6 +55,7 @@
             border: 1px solid #DFE1E6;
             padding: 8px;
             text-align: left;
+            word-break: break-all;
         }
         th {
             background: #f4f5f7;
@@ -180,6 +181,46 @@
                     .filter(row => row !== null);
             }
 
+            function htmlToJiraMarkup(html) {
+                const temp = document.createElement('div');
+                temp.innerHTML = html;
+
+                function processNode(node) {
+                    if (node.nodeType === Node.TEXT_NODE) {
+                        return node.textContent;
+                    }
+                    
+                    if (node.nodeType === Node.ELEMENT_NODE) {
+                        const tag = node.tagName.toLowerCase();
+                        const innerContent = Array.from(node.childNodes)
+                            .map(child => processNode(child))
+                            .join('');
+                            
+                        switch(tag) {
+                            case 'table':
+                                return innerContent;
+                            case 'tr':
+                                if (node.parentElement.tagName === 'THEAD') {
+                                    return '||' + Array.from(node.children)
+                                        .map(th => th.textContent.trim())
+                                        .join('||') + '||\n';
+                                }
+                                return '|' + Array.from(node.children)
+                                    .map(td => td.textContent.trim() || ' ')
+                                    .join('|') + '|\n';
+                            case 'td':
+                            case 'th':
+                                return innerContent;
+                            default:
+                                return innerContent;
+                        }
+                    }
+                    return '';
+                }
+
+                return processNode(temp);
+            }
+
             form.addEventListener('submit', async (e) => {
                 e.preventDefault();
                 debugOutput.textContent = '';
@@ -187,38 +228,57 @@
                 try {
                     const name = document.getElementById('name').value;
                     const dueDate = document.getElementById('dueDate').value;
+                    const formContent = document.getElementById('furlTable').innerHTML;
+                    const jiraMarkup = htmlToJiraMarkup(formContent);
                     const tableData = extractTableData();
                     
                     if (tableData.length === 0) {
                         throw new Error('Please fill in at least one row in the table');
                     }
 
-                    // Format data as rows for Google Sheets
-                    const rows = tableData.map(row => ({
+                    // Data for Jira webhook
+                    const jiraData = {
+                        title: "FRIENDLY URL",
+                        name: name,
+                        description: jiraMarkup
+                    };
+
+                    // Data for Google Sheets webhook
+                    const sheetsData = tableData.map(row => ({
                         Name: name,
                         'Due Date': dueDate,
                         'Friendly URL': row.friendlyUrl,
                         'Destination URL': row.destinationUrl
                     }));
 
-                    log('Sending data to webhook:', rows);
-
-                    const response = await fetch('https://n8n-container-service.5ndtj2s2t8qdr.eu-west-2.cs.amazonlightsail.com/webhook/9c5d58f8-73a1-45c7-9360-6cedf7e94676', {
+                    // Send to Jira webhook
+                    log('Sending data to Jira webhook:', jiraData);
+                    const jiraResponse = await fetch('https://n8n-container-service.5ndtj2s2t8qdr.eu-west-2.cs.amazonlightsail.com/webhook/9c5d58f8-73a1-45c7-9360-6cedf7e94676', {
                         method: 'POST',
                         headers: {
                             'Content-Type': 'application/json',
                             'Accept': 'application/json'
                         },
-                        body: JSON.stringify(rows)
+                        body: JSON.stringify(jiraData)
                     });
 
-                    log(`Response status: ${response.status}`);
-                    
-                    const responseText = await response.text();
-                    log('Response body:', responseText);
+                    log(`Jira webhook response status: ${jiraResponse.status}`);
 
-                    if (!response.ok) {
-                        throw new Error(`Failed to submit: ${response.status} ${responseText}`);
+                    // Send to Google Sheets webhook
+                    log('Sending data to Sheets webhook:', sheetsData);
+                    const sheetsResponse = await fetch('https://n8n-container-service.5ndtj2s2t8qdr.eu-west-2.cs.amazonlightsail.com/webhook/992489c2-1981-47f4-a989-f0750274494b', {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json',
+                            'Accept': 'application/json'
+                        },
+                        body: JSON.stringify(sheetsData)
+                    });
+
+                    log(`Sheets webhook response status: ${sheetsResponse.status}`);
+
+                    if (!jiraResponse.ok || !sheetsResponse.ok) {
+                        throw new Error('Failed to submit one or more requests');
                     }
 
                     showMessage(successMessage);
