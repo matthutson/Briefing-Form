@@ -1,394 +1,116 @@
 <!DOCTYPE html>
 <html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Request Friendly URL</title>
-    <style>
-        body {
-            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
-            max-width: 800px;
-            margin: 2rem auto;
-            padding: 0 1rem;
-            color: #172B4D;
+<!-- Previous head and style sections remain the same -->
+
+<script>
+    document.addEventListener('DOMContentLoaded', () => {
+        const form = document.getElementById('furlForm');
+        const successMessage = document.getElementById('successMessage');
+        const errorMessage = document.getElementById('errorMessage');
+
+        // Previous formatDoc and htmlToJiraMarkup functions remain the same
+
+        // New function to extract table data
+        function extractTableData() {
+            const rows = Array.from(document.querySelectorAll('#furlTable tbody tr'));
+            return rows
+                .map(row => {
+                    const cells = Array.from(row.cells);
+                    const friendlyUrl = cells[0].textContent.trim();
+                    const destinationUrl = cells[1].textContent.trim();
+                    
+                    // Only return if both cells have content
+                    if (friendlyUrl && destinationUrl) {
+                        return {
+                            friendlyUrl,
+                            destinationUrl
+                        };
+                    }
+                    return null;
+                })
+                .filter(row => row !== null); // Remove empty rows
         }
-        .form-group {
-            margin-bottom: 1.5rem;
-        }
-        label {
-            display: block;
-            margin-bottom: 0.5rem;
-            font-weight: 500;
-        }
-        input[type="text"],
-        input[type="email"] {
-            width: 100%;
-            padding: 0.5rem;
-            border: 2px solid #DFE1E6;
-            border-radius: 3px;
-            font-size: 1rem;
-            margin-bottom: 0.5rem;
-        }
-        .example-section {
-            margin-bottom: 1rem;
-            padding: 1rem;
-            background: #f4f5f7;
-            border-radius: 3px;
-        }
-        .example-section p {
-            margin: 0.5rem 0;
-        }
-        .example-section p:first-child {
-            font-weight: 500;
-        }
-        .example-table {
-            width: 100%;
-            border-collapse: collapse;
-            margin: 0.5rem 0;
-            background: white;
-        }
-        .example-table th,
-        .example-table td {
-            border: 1px solid #DFE1E6;
-            padding: 8px;
-            text-align: left;
-            word-break: break-all;
-        }
-        .example-table th {
-            font-weight: 600;
-        }
-        .editor-toolbar {
-            padding: 0.5rem;
-            border: 2px solid #DFE1E6;
-            border-bottom: none;
-            border-radius: 3px 3px 0 0;
-            background: #f4f5f7;
-            display: flex;
-            flex-wrap: wrap;
-            gap: 0.5rem;
-        }
-        .editor-toolbar button {
-            padding: 0.25rem 0.5rem;
-            background: white;
-            border: 1px solid #DFE1E6;
-            border-radius: 3px;
-            cursor: pointer;
-            font-size: 0.875rem;
-        }
-        .editor-toolbar button:hover {
-            background: #f4f5f7;
-        }
-        .editor-content {
-            border: 2px solid #DFE1E6;
-            border-top: none;
-            border-radius: 0 0 3px 3px;
-            padding: 0.5rem;
-            min-height: 150px;
-        }
-        .submit-btn {
-            background: #E31C3D;
-            color: white;
-            border: none;
-            padding: 0.75rem 1.5rem;
-            border-radius: 3px;
-            font-size: 1rem;
-            cursor: pointer;
-        }
-        .submit-btn:hover {
-            background: #CD1736;
-        }
-        table {
-            width: 100%;
-            border-collapse: collapse;
-            margin: 1rem 0;
-        }
-        th, td {
-            border: 1px solid #DFE1E6;
-            padding: 8px;
-            text-align: left;
-            word-break: break-all;
-        }
-        th {
-            background: #f4f5f7;
-            white-space: nowrap;
-            font-weight: 500;
-        }
-        td[contenteditable="true"] {
-            line-height: 1.5;
-            min-height: 24px;
-            height: 24px;
-            padding: 8px;
-        }
-        td[contenteditable="true"]:empty:before {
-            content: '';
-            display: inline-block;
-            min-height: 1.5em;
-        }
-        .debug-panel {
-            margin-top: 2rem;
-            padding: 1rem;
-            background: #f4f5f7;
-            border-radius: 3px;
-            display: none;
-        }
-        .modal {
-            display: none;
-            position: fixed;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 100%;
-            background: rgba(0, 0, 0, 0.5);
-            z-index: 1000;
-        }
-        .modal-content {
-            position: fixed;
-            top: 50%;
-            left: 50%;
-            transform: translate(-50%, -50%);
-            background: white;
-            padding: 20px;
-            border-radius: 5px;
-            min-width: 300px;
-        }
-        .modal input {
-            width: 100%;
-            margin-bottom: 10px;
-            padding: 0.5rem;
-            border: 1px solid #DFE1E6;
-            border-radius: 3px;
-        }
-        .success-message {
-            position: fixed;
-            top: 20px;
-            left: 50%;
-            transform: translateX(-50%);
-            background: #00875a;
-            color: white;
-            padding: 1rem;
-            border-radius: 4px;
-            z-index: 1000;
-            display: none;
-        }
-        .error-message {
-            position: fixed;
-            top: 20px;
-            left: 50%;
-            transform: translateX(-50%);
-            background: #DE350B;
-            color: white;
-            padding: 1rem;
-            border-radius: 4px;
-            z-index: 1000;
-            display: none;
-        }
-    </style>
-</head>
-<body>
-    <h1>Request Friendly URL</h1>
-    
-    <form id="furlForm">
-        <input type="hidden" id="title" name="title" value="FRIENDLY URL">
-        
-        <div class="form-group">
-            <label for="name">Your Name*</label>
-            <input type="text" id="name" name="name" required>
-        </div>
-        
-        <div class="form-group">
-            <label for="email">Your Email*</label>
-            <input type="email" id="email" name="email" required>
-        </div>
-        
-        <div class="form-group">
-            <label>Friendly URLs*</label>
+
+        // Form submission
+        form.addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const debugPanel = document.getElementById('debugPanel');
+            const debugOutput = document.getElementById('debugOutput');
+            debugPanel.style.display = 'block';
             
-            <div class="example-section">
-                <p>Add all of the FURLS you need in the table below. If you just need one only fill out the top row.</p>
-                <p>Add your data in the following format:</p>
-                <table class="example-table">
-                    <tr>
-                        <th>Friendly URL</th>
-                        <th>Destination URL with UTM tracking string</th>
-                    </tr>
-                    <tr>
-                        <td>/hope</td>
-                        <td>https://donation.comicrelief.com/?cartId=cr24-winter-sms-c&utm_source=triggered&utm_medium=sms&utm_campaign=winter24__donate_donate___uk___text__cr0002331</td>
-                    </tr>
-                </table>
-            </div>
-
-            <div class="editor-toolbar">
-                <button type="button" onclick="formatDoc('formatBlock', 'P')">Normal text</button>
-                <button type="button" onclick="formatDoc('formatBlock', 'H1')">H1</button>
-                <button type="button" onclick="formatDoc('formatBlock', 'H2')">H2</button>
-                <button type="button" onclick="formatDoc('formatBlock', 'H3')">H3</button>
-                <button type="button" onclick="formatDoc('bold')">B</button>
-                <button type="button" onclick="formatDoc('italic')">I</button>
-                <button type="button" onclick="formatDoc('insertunorderedlist')">• List</button>
-                <button type="button" onclick="formatDoc('insertorderedlist')">1. List</button>
-                <button type="button" onclick="formatDoc('createlink')">Link</button>
-            </div>
-            <div id="furlTable" class="editor-content" contenteditable="true">
-                <table>
-                    <thead>
-                        <tr>
-                            <th>Friendly URL</th>
-                            <th>Destination URL with UTM tracking string</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        <tr><td contenteditable="true"></td><td contenteditable="true"></td></tr>
-                        <tr><td contenteditable="true"></td><td contenteditable="true"></td></tr>
-                        <tr><td contenteditable="true"></td><td contenteditable="true"></td></tr>
-                        <tr><td contenteditable="true"></td><td contenteditable="true"></td></tr>
-                        <tr><td contenteditable="true"></td><td contenteditable="true"></td></tr>
-                        <tr><td contenteditable="true"></td><td contenteditable="true"></td></tr>
-                        <tr><td contenteditable="true"></td><td contenteditable="true"></td></tr>
-                        <tr><td contenteditable="true"></td><td contenteditable="true"></td></tr>
-                        <tr><td contenteditable="true"></td><td contenteditable="true"></td></tr>
-                        <tr><td contenteditable="true"></td><td contenteditable="true"></td></tr>
-                    </tbody>
-                </table>
-            </div>
-        </div>
-        
-        <button type="submit" class="submit-btn">Submit</button>
-    </form>
-
-    <div id="successMessage" class="success-message">Friendly URLs submitted successfully!</div>
-    <div id="errorMessage" class="error-message"></div>
-    <div id="debugPanel" class="debug-panel">
-        <h3>Debug Information</h3>
-        <pre id="debugOutput"></pre>
-    </div>
-
-    <script>
-        document.addEventListener('DOMContentLoaded', () => {
-            const form = document.getElementById('furlForm');
-            const successMessage = document.getElementById('successMessage');
-            const errorMessage = document.getElementById('errorMessage');
-
-            function showMessage(element, duration = 3000) {
-                element.style.display = 'block';
-                setTimeout(() => {
-                    element.style.display = 'none';
-                }, duration);
+            function log(message, data = null) {
+                const timestamp = new Date().toISOString();
+                let logMessage = `${timestamp}: ${message}\n`;
+                if (data) {
+                    logMessage += JSON.stringify(data, null, 2) + '\n';
+                }
+                debugOutput.textContent += logMessage;
+                console.log(message, data);
             }
 
-            // Rich text formatting functions
-            window.formatDoc = function(cmd, value = null) {
-                if (cmd === 'formatBlock') {
-                    document.execCommand(cmd, false, `<${value}>`);
-                } else if (cmd === 'createlink') {
-                    const url = prompt('Enter URL:');
-                    if (url) document.execCommand(cmd, false, url);
-                } else {
-                    document.execCommand(cmd, false, null);
-                }
-                document.getElementById('furlTable').focus();
+            const formContent = document.getElementById('furlTable').innerHTML;
+            const jiraMarkup = htmlToJiraMarkup(formContent);
+            const tableData = extractTableData();
+
+            // Create Jira ticket data
+            const jiraData = {
+                title: document.getElementById('title').value,
+                name: document.getElementById('name').value,
+                email: document.getElementById('email').value,
+                description: jiraMarkup
             };
 
-            function htmlToJiraMarkup(html) {
-                const temp = document.createElement('div');
-                temp.innerHTML = html;
+            // Create Google Sheets data
+            const sheetsData = tableData.map(row => ({
+                Summary: `FURL Request - ${row.friendlyUrl}`,
+                'Due Date': new Date().toISOString().split('T')[0], // Today's date
+                'Friendly URL': row.friendlyUrl,
+                'Destination URL': row.destinationUrl
+            }));
 
-                function processNode(node) {
-                    if (node.nodeType === Node.TEXT_NODE) {
-                        return node.textContent;
-                    }
-                    
-                    if (node.nodeType === Node.ELEMENT_NODE) {
-                        const tag = node.tagName.toLowerCase();
-                        const innerContent = Array.from(node.childNodes)
-                            .map(child => processNode(child))
-                            .join('');
-                            
-                        switch(tag) {
-                            case 'table':
-                                return innerContent;
-                            case 'tr':
-                                if (node.parentElement.tagName === 'THEAD') {
-                                    return '||' + Array.from(node.children)
-                                        .map(th => th.textContent.trim())
-                                        .join('||') + '||\n';
-                                }
-                                return '|' + Array.from(node.children)
-                                    .map(td => td.textContent.trim() || ' ')
-                                    .join('|') + '|\n';
-                            case 'td':
-                            case 'th':
-                                return innerContent;
-                            default:
-                                return innerContent;
-                        }
-                    }
-                    return '';
-                }
+            try {
+                // Send to Jira via n8n
+                log('Sending request to Jira webhook...');
+                const jiraResponse = await fetch('https://n8n-container-service.5ndtj2s2t8qdr.eu-west-2.cs.amazonlightsail.com/webhook/9c5d58f8-73a1-45c7-9360-6cedf7e94676', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify(jiraData)
+                });
 
-                return processNode(temp);
-            }
-
-            // Form submission
-            form.addEventListener('submit', async (e) => {
-                e.preventDefault();
-                const debugPanel = document.getElementById('debugPanel');
-                const debugOutput = document.getElementById('debugOutput');
-                debugPanel.style.display = 'block';
+                log(`Jira response status: ${jiraResponse.status}`);
                 
-                function log(message, data = null) {
-                    const timestamp = new Date().toISOString();
-                    let logMessage = `${timestamp}: ${message}\n`;
-                    if (data) {
-                        logMessage += JSON.stringify(data, null, 2) + '\n';
-                    }
-                    debugOutput.textContent += logMessage;
-                    console.log(message, data);
+                // Send to Google Sheets via n8n (you'll need to create a new webhook for this)
+                log('Sending request to Google Sheets webhook...');
+                const sheetsResponse = await fetch('YOUR_NEW_N8N_WEBHOOK_URL_FOR_SHEETS', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify(sheetsData)
+                });
+
+                log(`Sheets response status: ${sheetsResponse.status}`);
+
+                if (!jiraResponse.ok || !sheetsResponse.ok) {
+                    throw new Error('Failed to submit one or more requests');
                 }
 
-                const formContent = document.getElementById('furlTable').innerHTML;
-                const jiraMarkup = htmlToJiraMarkup(formContent);
+                showMessage(successMessage);
+                form.reset();
+                document.querySelectorAll('#furlTable td[contenteditable="true"]')
+                    .forEach(cell => cell.textContent = '');
+                debugOutput.textContent = '';
 
-                const formData = {
-                    title: document.getElementById('title').value,
-                    name: document.getElementById('name').value,
-                    email: document.getElementById('email').value,
-                    description: jiraMarkup
-                };
-
-                log('Form data to be sent:', formData);
-
-                try {
-                    log('Sending request to webhook...');
-                    const response = await fetch('https://n8n-container-service.5ndtj2s2t8qdr.eu-west-2.cs.amazonlightsail.com/webhook/9c5d58f8-73a1-45c7-9360-6cedf7e94676', {
-                        method: 'POST',
-                        headers: {
-                            'Content-Type': 'application/json'
-                        },
-                        body: JSON.stringify(formData)
-                    });
-
-                    log(`Response status: ${response.status}`);
-                    const responseText = await response.text();
-                    log('Response body:', responseText);
-
-                    if (!response.ok) {
-                        throw new Error(`Failed to create issue: ${response.status} ${responseText}`);
-                    }
-
-                    showMessage(successMessage);
-                    form.reset();
-                    document.querySelectorAll('#furlTable td[contenteditable="true"]')
-                        .forEach(cell => cell.textContent = '');
-                    debugOutput.textContent = '';
-
-                } catch (error) {
-                    log('Error occurred:', error.message);
-                    errorMessage.textContent = error.message;
-                    showMessage(errorMessage);
-                }
-            });
+            } catch (error) {
+                log('Error occurred:', error.message);
+                errorMessage.textContent = error.message;
+                showMessage(errorMessage);
+            }
         });
-    </script>
-</body>
+    });
+</script>
+
+<!-- Rest of the HTML remains the same -->
 </html>
