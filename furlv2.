@@ -1,0 +1,105 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>FURL Request</title>
+    <style>
+        body { font-family: system-ui; max-width: 800px; margin: 20px auto; padding: 20px; }
+        .form-group { margin-bottom: 20px; }
+        label { display: block; margin-bottom: 5px; }
+        input, button { padding: 8px; margin-bottom: 10px; width: 100%; }
+        button { background: #E31C3D; color: white; border: none; cursor: pointer; }
+        table { width: 100%; border-collapse: collapse; margin: 10px 0; }
+        th, td { border: 1px solid #ddd; padding: 8px; }
+        [contenteditable] { min-height: 20px; }
+    </style>
+</head>
+<body>
+    <h2>FURL Request</h2>
+    <div class="form-group">
+        <label>Name:</label>
+        <input type="text" id="name" required>
+        
+        <label>Due Date:</label>
+        <input type="date" id="dueDate" required>
+        
+        <label>FURLs:</label>
+        <table id="furlTable">
+            <tr>
+                <th>Friendly URL</th>
+                <th>Destination URL</th>
+            </tr>
+            <tr>
+                <td contenteditable="true"></td>
+                <td contenteditable="true"></td>
+            </tr>
+            <tr>
+                <td contenteditable="true"></td>
+                <td contenteditable="true"></td>
+            </tr>
+            <tr>
+                <td contenteditable="true"></td>
+                <td contenteditable="true"></td>
+            </tr>
+        </table>
+        
+        <button onclick="submitForm()">Submit</button>
+    </div>
+
+    <script>
+        async function submitForm() {
+            const name = document.getElementById('name').value;
+            const dueDate = document.getElementById('dueDate').value;
+            
+            // Get all rows with content
+            const rows = Array.from(document.querySelectorAll('#furlTable tr'))
+                .slice(1) // Skip header row
+                .map(row => ({
+                    Name: name,
+                    'Due Date': dueDate,
+                    'Friendly URL': row.cells[0].textContent.trim(),
+                    'Destination URL': row.cells[1].textContent.trim()
+                }))
+                .filter(row => row['Friendly URL'] && row['Destination URL']); // Only keep filled rows
+
+            if (!name || !dueDate || rows.length === 0) {
+                alert('Please fill in all required fields and at least one FURL.');
+                return;
+            }
+
+            try {
+                // Send to Sheets
+                await fetch('https://n8n-container-service.5ndtj2s2t8qdr.eu-west-2.cs.amazonlightsail.com/webhook/992489c2-1981-47f4-a989-f0750274494b', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(rows)
+                });
+
+                // Send to Jira
+                await fetch('https://n8n-container-service.5ndtj2s2t8qdr.eu-west-2.cs.amazonlightsail.com/webhook/9c5d58f8-73a1-45c7-9360-6cedf7e94676', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        title: 'FRIENDLY URL',
+                        name: name,
+                        description: rows.map(row => 
+                            `|| ${row['Friendly URL']} || ${row['Destination URL']} ||`
+                        ).join('\n')
+                    })
+                });
+
+                alert('Submitted successfully!');
+                document.getElementById('name').value = '';
+                document.getElementById('dueDate').value = '';
+                document.querySelectorAll('#furlTable td[contenteditable]')
+                    .forEach(td => td.textContent = '');
+
+            } catch (error) {
+                alert('Error submitting form. Please try again.');
+                console.error(error);
+            }
+        }
+    </script>
+</body>
+</html>
