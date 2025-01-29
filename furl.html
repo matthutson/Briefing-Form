@@ -83,7 +83,7 @@
                 
                 // Send to Google Sheets via n8n (you'll need to create a new webhook for this)
                 log('Sending request to Google Sheets webhook...');
-                const sheetsResponse = await fetch('YOUR_NEW_N8N_WEBHOOK_URL_FOR_SHEETS', {
+                const sheetsResponse = await fetch('https://n8n-container-service.5ndtj2s2t8qdr.eu-west-2.cs.amazonlightsail.com/webhook/9c5d58f8-73a1-45c7-9360-6cedf7e94676', {
                     method: 'POST',
                     headers: {
                         'Content-Type': 'application/json'
